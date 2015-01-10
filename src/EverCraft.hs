@@ -60,7 +60,7 @@ newCharacter = defaultCharacter
 
 maxHitpoints :: Character -> Int
 maxHitpoints character = if hp < 1 then 1 else hp
-  where hp = baseHitpoints + (abilityModifier (constitution $ abilities character)) + levelModifier
+  where hp = baseHitpoints + abilityModifier (constitution $ abilities character) + levelModifier
         levelModifier = 5 * (currentLevel character - 1)
 
 currentHitpoints :: Character -> Int
@@ -89,7 +89,7 @@ armorClass :: Character -> Int
 armorClass character = baseArmorClass + abilityModifier (dexterity $ abilities character)
 
 addDamage :: Damage -> Character -> Character
-addDamage amount character = character {damage=(damage character + amount)}
+addDamage amount character = character {damage=damage character + amount}
 
 isAlive :: Character -> Bool
 isAlive character = currentHitpoints character > 0
@@ -108,7 +108,7 @@ isCriticalHit :: Roll -> Bool
 isCriticalHit roll = roll == criticalRoll
 
 attackIsSuccessful :: Character -> Character -> Roll -> Bool
-attackIsSuccessful attacker defender roll = (modifiedAttackRoll attacker roll) >= armorClass defender
+attackIsSuccessful attacker defender roll = modifiedAttackRoll attacker roll >= armorClass defender
 
 rawDamageForAttack :: Character -> Roll -> Damage
 rawDamageForAttack character roll = amount + abilityModifier (strength $ abilities character) * if isCriticalHit roll then 2 else 1
@@ -130,5 +130,5 @@ runAttack attacker defender roll
   | otherwise = AttackResult { player=attacker
                              , opponent=defender
                              }
-    where new_attacker = (addExperience baseExperienceForAttack attacker)
-          new_opponent = (addDamage (damageForAttack attacker roll) defender)
+    where new_attacker = addExperience baseExperienceForAttack attacker
+          new_opponent = addDamage (damageForAttack attacker roll) defender
