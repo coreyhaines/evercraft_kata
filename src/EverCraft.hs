@@ -70,13 +70,13 @@ currentExperience :: Character -> Int
 currentExperience = experience
 
 addExperience :: Int -> Character -> Character
-addExperience amount player = player{experience=(currentExperience player) + amount}
+addExperience amount character = character{experience= currentExperience character + amount}
 
 levelLedge :: Int
 levelLedge = 1000
 
 currentLevel :: Character -> Int
-currentLevel player = 1 + currentExperience player `div` levelLedge
+currentLevel character = 1 + currentExperience character `div` levelLedge
 
 abilityModifier :: Int -> Int
 abilityModifier abilityScore = (abilityScore - 10) `div` 2
@@ -108,12 +108,12 @@ isCriticalHit :: Roll -> Bool
 isCriticalHit roll = roll == criticalRoll
 
 attackIsSuccessful :: Character -> Character -> Roll -> Bool
-attackIsSuccessful player opponent roll = (modifiedAttackRoll player roll) >= armorClass opponent
+attackIsSuccessful attacker defender roll = (modifiedAttackRoll attacker roll) >= armorClass defender
 
 rawDamageForAttack :: Character -> Roll -> Damage
-rawDamageForAttack character roll = damage + abilityModifier (strength $ abilities character) * if isCriticalHit roll then 2 else 1
+rawDamageForAttack character roll = amount + abilityModifier (strength $ abilities character) * if isCriticalHit roll then 2 else 1
     where
-  damage
+  amount
     | isCriticalHit roll = baseCriticalDamage
     | otherwise = baseNoncriticalDamage
 
@@ -124,11 +124,11 @@ damageForAttack character roll = if totalDamage >= 1
   where totalDamage = rawDamageForAttack character roll
 
 runAttack :: Character -> Character -> Roll -> AttackResult
-runAttack player opponent roll
-  | attackIsSuccessful player opponent roll = AttackResult { player=new_player
-                                                           , opponent=new_opponent }
-  | otherwise = AttackResult { player=player
-                             , opponent=opponent
+runAttack attacker defender roll
+  | attackIsSuccessful attacker defender roll = AttackResult { player=new_attacker
+                                                             , opponent=new_opponent }
+  | otherwise = AttackResult { player=attacker
+                             , opponent=defender
                              }
-    where new_player = (addExperience baseExperienceForAttack player)
-          new_opponent = (addDamage (damageForAttack player roll) opponent)
+    where new_attacker = (addExperience baseExperienceForAttack attacker)
+          new_opponent = (addDamage (damageForAttack attacker roll) defender)
