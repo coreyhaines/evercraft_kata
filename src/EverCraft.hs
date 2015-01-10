@@ -105,7 +105,7 @@ baseCriticalDamage :: Int
 baseCriticalDamage = 2
 
 isCriticalHit :: Roll -> Bool
-isCriticalHit roll = roll == criticalRoll
+isCriticalHit = (==) criticalRoll
 
 attackIsSuccessful :: Character -> Character -> Roll -> Bool
 attackIsSuccessful attacker defender roll = modifiedAttackRoll attacker roll >= armorClass defender
