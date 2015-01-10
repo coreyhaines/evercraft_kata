@@ -59,7 +59,9 @@ newCharacter :: Character
 newCharacter = defaultCharacter
 
 abilityModifier :: Int -> Int
-abilityModifier abilityScore = (abilityScore - 10) `div` 2
+abilityModifier = halfOf . minusTen
+                  where halfOf = flip div 2
+                        minusTen = flip (-) 10
 
 scoreForAbility :: (Abilities -> Int) -> Character -> Int
 scoreForAbility f c = f $ abilities c
