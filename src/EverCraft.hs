@@ -58,9 +58,27 @@ baseExperienceForAttack = 10
 newCharacter :: Character
 newCharacter = defaultCharacter
 
+abilityModifier :: Int -> Int
+abilityModifier abilityScore = (abilityScore - 10) `div` 2
+
+scoreForAbility :: (Abilities -> Int) -> Character -> Int
+scoreForAbility f c = f $ abilities c
+
+modifierForAbility :: (Abilities -> Int) -> Character -> Int
+modifierForAbility f c = abilityModifier $ scoreForAbility f c
+
+conModifier :: Character -> Int
+conModifier = modifierForAbility constitution
+
+strModifier :: Character -> Int
+strModifier = modifierForAbility strength
+
+dexModifier :: Character -> Int
+dexModifier = modifierForAbility dexterity
+
 maxHitpoints :: Character -> Int
 maxHitpoints character = if hp < 1 then 1 else hp
-  where hp = baseHitpoints + abilityModifier (constitution $ abilities character) + levelModifier
+  where hp = baseHitpoints + conModifier character + levelModifier
         levelModifier = 5 * (currentLevel character - 1)
 
 currentHitpoints :: Character -> Int
@@ -78,15 +96,12 @@ levelLedge = 1000
 currentLevel :: Character -> Int
 currentLevel character = 1 + currentExperience character `div` levelLedge
 
-abilityModifier :: Int -> Int
-abilityModifier abilityScore = (abilityScore - 10) `div` 2
-
 modifiedAttackRoll :: Character -> Roll -> Roll
-modifiedAttackRoll character originalRoll = originalRoll + abilityModifier (strength $ abilities character) + levelModifier
+modifiedAttackRoll character originalRoll = originalRoll + strModifier character + levelModifier
   where levelModifier = currentLevel character `div` 2
 
 armorClass :: Character -> Int
-armorClass character = baseArmorClass + abilityModifier (dexterity $ abilities character)
+armorClass character = baseArmorClass + dexModifier character
 
 addDamage :: Damage -> Character -> Character
 addDamage amount character = character {damage=damage character + amount}
@@ -111,11 +126,14 @@ attackIsSuccessful :: Character -> Character -> Roll -> Bool
 attackIsSuccessful attacker defender roll = modifiedAttackRoll attacker roll >= armorClass defender
 
 rawDamageForAttack :: Character -> Roll -> Damage
-rawDamageForAttack character roll = amount + abilityModifier (strength $ abilities character) * if isCriticalHit roll then 2 else 1
+rawDamageForAttack character roll = amount + strModifier character * maybeCritDmgAmount
     where
   amount
     | isCriticalHit roll = baseCriticalDamage
     | otherwise = baseNoncriticalDamage
+  maybeCritDmgAmount = if isCriticalHit roll
+                       then 2
+                       else 1
 
 damageForAttack :: Character -> Roll -> Damage
 damageForAttack character roll = if totalDamage >= 1
