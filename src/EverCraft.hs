@@ -101,8 +101,9 @@ currentLevel = (1 +) . levelsOfExperience
         expPerLevel = flip div levelLedge
 
 modifiedAttackRoll :: Character -> Roll -> Roll
-modifiedAttackRoll character originalRoll = originalRoll + strModifier character + levelModifier
-  where levelModifier = currentLevel character `div` 2
+modifiedAttackRoll character originalRoll = originalRoll + modifiers
+  where modifiers = strModifier character + halfCharacterLevel character
+        halfCharacterLevel = flip div 2 . currentLevel
 
 armorClass :: Character -> Int
 armorClass character = baseArmorClass + dexModifier character
