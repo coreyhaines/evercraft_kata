@@ -1,6 +1,6 @@
 name:           EverCraft
 version:        0.1
-cabal-version:  >= 1.9.2
+cabal-version:  >= 1.22.0
 author:         Corey Haines
 copyright:      2015 Corey Haines
 license:        MIT
@@ -12,6 +12,7 @@ executable evercraft
   hs-source-dirs:  src
   main-is:         Main.hs
   build-depends:   base
+  default-language: Haskell2010
 
 Test-Suite test-foo
     type:           exitcode-stdio-1.0
@@ -21,4 +22,5 @@ Test-Suite test-foo
                     HUnit,
                     test-framework,
                     test-framework-hunit
-    Ghc-Options:    -threaded -O0
+    Ghc-Options:    -threaded -O0 -fhpc -hpcdir dist/hpc/EverCraft-0.1
+    default-language: Haskell2010
