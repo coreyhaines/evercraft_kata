@@ -79,7 +79,7 @@ dexModifier :: Character -> Int
 dexModifier = modifierForAbility dexterity
 
 maxHitpoints :: Character -> Int
-maxHitpoints character = if hp < 1 then 1 else hp
+maxHitpoints character = max 1 hp
   where hp = baseHitpoints + conModifier character + levelModifier
         levelModifier = 5 * (currentLevel character - 1)
 
@@ -110,7 +110,6 @@ addDamage amount character = character {damage=damage character + amount}
 
 isAlive :: Character -> Bool
 isAlive character = currentHitpoints character > 0
-
 
 criticalRoll :: Int
 criticalRoll = 20
