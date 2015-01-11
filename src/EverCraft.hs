@@ -139,7 +139,8 @@ rawDamageForAttack character roll = amount + strModifier character * maybeCritDm
                        else 1
 
 damageForAttack :: Character -> Roll -> Damage
-damageForAttack = (max 1 .) . rawDamageForAttack
+damageForAttack character roll = max 1 totalDamage
+  where totalDamage = rawDamageForAttack character roll
 
 runAttack :: Character -> Character -> Roll -> AttackResult
 runAttack attacker defender roll
