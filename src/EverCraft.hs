@@ -96,7 +96,9 @@ levelLedge :: Int
 levelLedge = 1000
 
 currentLevel :: Character -> Int
-currentLevel character = 1 + currentExperience character `div` levelLedge
+currentLevel = (1 +) . levelsOfExperience
+  where levelsOfExperience = expPerLevel . currentExperience
+        expPerLevel = flip div levelLedge
 
 modifiedAttackRoll :: Character -> Roll -> Roll
 modifiedAttackRoll character originalRoll = originalRoll + strModifier character + levelModifier
@@ -137,10 +139,7 @@ rawDamageForAttack character roll = amount + strModifier character * maybeCritDm
                        else 1
 
 damageForAttack :: Character -> Roll -> Damage
-damageForAttack character roll = if totalDamage >= 1
-                                 then totalDamage
-                                 else 1
-  where totalDamage = rawDamageForAttack character roll
+damageForAttack = (max 1 .) . rawDamageForAttack
 
 runAttack :: Character -> Character -> Roll -> AttackResult
 runAttack attacker defender roll
