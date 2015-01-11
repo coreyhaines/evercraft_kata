@@ -1,26 +1,86 @@
 module EverCraft where
 
+type Roll = Int
+type Damage = Int
+
 data Alignment =  Good | Evil | Neutral
                   deriving Show
 
-data Abilities = Abilities {strength, dexterity, constitution, wisdom, intelligence, charisma::Int}
+data Abilities = Abilities { strength
+                           , dexterity
+                           , constitution
+                           , wisdom
+                           , intelligence
+                           , charisma::Int
+                           }
                   deriving Show
+
+data AttackResult = AttackResult { player
+                                 , opponent::Character
+                                 }
+                    deriving Show
+
+data Character = Character { name::String
+                           , alignment::Alignment
+                           , experience::Int
+                           , damage::Damage
+                           , abilities::Abilities
+                           }
+                  deriving Show
+
 defaultAbilities :: Abilities
-defaultAbilities = Abilities {strength=10, dexterity=10, constitution=10, wisdom=10, intelligence=10, charisma=10}
+defaultAbilities = Abilities { strength=10
+                             , dexterity=10
+                             , constitution=10
+                             , wisdom=10
+                             , intelligence=10
+                             , charisma=10 }
+
+defaultCharacter :: Character
+defaultCharacter = Character { name=""
+                             , alignment=Neutral
+                             , experience=0
+                             , damage=0
+                             , abilities=defaultAbilities
+                             }
+newAbilities :: Abilities
 newAbilities = defaultAbilities
 
+baseHitpoints :: Int
 baseHitpoints = 5
+
+baseArmorClass :: Int
 baseArmorClass = 10
+
+baseExperienceForAttack :: Int
 baseExperienceForAttack = 10
-data Character = Character {name::String, alignment::Alignment, experience::Int, damage::Damage, abilities::Abilities}
-                  deriving Show
-defaultCharacter :: Character
-defaultCharacter = Character {name="", alignment=Neutral, experience=0, damage=0, abilities=defaultAbilities}
+
+newCharacter :: Character
 newCharacter = defaultCharacter
 
+abilityModifier :: Int -> Int
+abilityModifier = halfOf . minusTen
+                  where halfOf = flip div 2
+                        minusTen = flip (-) 10
+
+scoreForAbility :: (Abilities -> Int) -> Character -> Int
+scoreForAbility f c = f $ abilities c
+
+modifierForAbility :: (Abilities -> Int) -> Character -> Int
+modifierForAbility f c = abilityModifier $ scoreForAbility f c
+
+conModifier :: Character -> Int
+conModifier = modifierForAbility constitution
+
+strModifier :: Character -> Int
+strModifier = modifierForAbility strength
+
+dexModifier :: Character -> Int
+dexModifier = modifierForAbility dexterity
+
 maxHitpoints :: Character -> Int
-maxHitpoints character = if hp < 1 then 1 else hp
-  where hp = baseHitpoints + (abilityModifier (constitution $ abilities character)) + levelModifier
+maxHitpoints character = max 1 hp
+  where hp = baseHitpoints + conModifier character + levelModifier
         levelModifier = 5 * (currentLevel character - 1)
 
 currentHitpoints :: Character -> Int
@@ -30,58 +90,65 @@ currentExperience :: Character -> Int
 currentExperience = experience
 
 addExperience :: Int -> Character -> Character
-addExperience amount player = player{experience=(currentExperience player) + amount}
+addExperience amount character = character{experience= currentExperience character + amount}
 
+levelLedge :: Int
 levelLedge = 1000
+
 currentLevel :: Character -> Int
-currentLevel player = 1 + currentExperience player `div` levelLedge
-
-type Roll = Int
-type Damage = Int
-
-abilityModifier :: Int -> Int
-abilityModifier abilityScore = (abilityScore - 10) `div` 2
+currentLevel = (1 +) . levelsOfExperience
+  where levelsOfExperience = expPerLevel . currentExperience
+        expPerLevel = flip div levelLedge
 
 modifiedAttackRoll :: Character -> Roll -> Roll
-modifiedAttackRoll character originalRoll = originalRoll + abilityModifier (strength $ abilities character) + levelModifier
-  where levelModifier = currentLevel character `div` 2
+modifiedAttackRoll character originalRoll = originalRoll + modifiers
+  where modifiers = strModifier character + halfCharacterLevel character
+        halfCharacterLevel = flip div 2 . currentLevel
 
 armorClass :: Character -> Int
-armorClass character = baseArmorClass + abilityModifier (dexterity $ abilities character)
+armorClass character = baseArmorClass + dexModifier character
 
 addDamage :: Damage -> Character -> Character
-addDamage amount character = character {damage=(damage character + amount)}
+addDamage amount character = character {damage=damage character + amount}
 
 isAlive :: Character -> Bool
 isAlive character = currentHitpoints character > 0
 
+criticalRoll :: Int
 criticalRoll = 20
+
+baseNoncriticalDamage :: Int
 baseNoncriticalDamage = 1
+
+baseCriticalDamage :: Int
 baseCriticalDamage = 2
 
 isCriticalHit :: Roll -> Bool
-isCriticalHit roll = roll == criticalRoll
+isCriticalHit = (==) criticalRoll
 
 attackIsSuccessful :: Character -> Character -> Roll -> Bool
-attackIsSuccessful player opponent roll = (modifiedAttackRoll player roll) >= armorClass opponent
+attackIsSuccessful attacker defender roll = modifiedAttackRoll attacker roll >= armorClass defender
 
 rawDamageForAttack :: Character -> Roll -> Damage
-rawDamageForAttack character roll = damage + abilityModifier (strength $ abilities character) * if isCriticalHit roll then 2 else 1
+rawDamageForAttack character roll = amount + strModifier character * maybeCritDmgAmount
     where
-  damage
+  amount
     | isCriticalHit roll = baseCriticalDamage
     | otherwise = baseNoncriticalDamage
+  maybeCritDmgAmount = if isCriticalHit roll
+                       then 2
+                       else 1
 
 damageForAttack :: Character -> Roll -> Damage
-damageForAttack character roll = if totalDamage >= 1 then totalDamage else 1
+damageForAttack character roll = max 1 totalDamage
   where totalDamage = rawDamageForAttack character roll
 
-data AttackResult = AttackResult{player,opponent::Character}
-                    deriving Show
-
 runAttack :: Character -> Character -> Roll -> AttackResult
-runAttack player opponent roll
-  | attackIsSuccessful player opponent roll = AttackResult{player=new_player,opponent=new_opponent}
-  | otherwise = AttackResult{player=player, opponent=opponent}
-    where new_player = (addExperience baseExperienceForAttack player)
-          new_opponent = (addDamage (damageForAttack player roll) opponent)
+runAttack attacker defender roll
+  | attackIsSuccessful attacker defender roll = AttackResult { player=new_attacker
+                                                             , opponent=new_opponent }
+  | otherwise = AttackResult { player=attacker
+                             , opponent=defender
+                             }
+    where new_attacker = addExperience baseExperienceForAttack attacker
+          new_opponent = addDamage (damageForAttack attacker roll) defender
